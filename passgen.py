@@ -1,15 +1,16 @@
-import argparse
-import os.path
+from argparse import ArgumentParser
 import sys
-from modules import tests, globals
+import re
+import os.path
+
+from modules import global_vars, tests
 
 
 @tests.get_console_parameters
-def get_console_parameters() -> argparse:
+def get_console_parameters() -> []:  # list
     # Get external console parameters
     # > python passgen.py 1 5 -o "c:/output/"
-
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument("start", type=int, help="Start Position (>=1)")
     parser.add_argument("stop", type=int, help="Stop Position")
     parser.add_argument("-o", "--output", nargs="?", help="Output Directory")
@@ -32,6 +33,7 @@ def checkup_last_word() -> str:
         pass
 
 
+@tests.password_generator
 def password_generator():
     # generate strings
     # write every string into 'tmp_dict' file
@@ -39,30 +41,26 @@ def password_generator():
 
     with open(main_variables.OUTPUT_FOLDER + r"\tmp_dict", "a") as file:
 
-        # start word = last word from 'last_word' file
+        # last_word - is first unwritten word in 'last_dict' file, but it's last in generating chain
+        # start word = word from 'last_word' file
         # or 'a'*3 -> 'aaa' (for example)
-        last_word = checkup_last_word()
         word: str = last_word if last_word else main_variables.CHARSET[0] * main_variables.PASSWORD_START_POSITION
 
-        # forming embedded loops: word length = 7 -> 7 loops -> char1, char2 .. char7
+        # forming embedded loops: word length = 7 -> 7 loops -> dict['char1':0, 'char2':0 .. 'char7':0]
+        # where 0 - char position in CHARSET
         embedded_loops: dict = {f"char{i+1}": 0 for i in range(main_variables.PASSWORD_STOP_POSITION)}
 
-        while True:
-            if file.writable():
-                file.write(fr"{word}")  # 'aa'  //  'v7-'
-                file.write("\r\n")
+        # encode 'word' to char positions in CHARSET
+        # 'aah8' -> dict['char1':0, 'char2':0, 'char3':8, 'char4':61]
+        for i, char in enumerate(embedded_loops):
+            embedded_loops[char] = main_variables.CHARSET.find(word[i])
 
-
-
-                # # find position 'a' in CHARSET -> 0
-                # # 'a' is last char from 'aa'
-                # # run once
-                # char_position_in_charset = main_variables.CHARSET.find(word[-1:])  # 0
-                #
-                # # next char
-                # next_char = main_variables.CHARSET[char_position_in_charset + 1]   # 'b' (after 'a')
-            else:
-                return fr""
+        # while True:
+        #     if file.writable():
+        #         file.write(fr"{word}")  # for example 'aa' or 'v7-'
+        #         file.write("\r\n")
+        #     else:
+        #         return fr""
 
 
 # -----------------------------
@@ -71,6 +69,6 @@ def password_generator():
 if __name__ == "__main__":
 
     cli_args = get_console_parameters()
-    main_variables = globals.MainVariables(cli_args.start, cli_args.stop, cli_args.output)
+    main_variables = global_vars.MainVariables(cli_args.start, cli_args.stop, cli_args.output)
 
-    password_generator()
+    # password_generator()

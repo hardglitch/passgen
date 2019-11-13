@@ -1,9 +1,9 @@
 import os.path
-from . import tests
 
 
 class MainVariables:
-    def __init__(self, start, stop, output):
+
+    def __init__(self, start: int = 0, stop: int = 0, output: str = ""):
         self.CHARSET = r"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" \
                        r"0123456789!@#$%^&*()-_+=~`[]{}|\:;""'<>,.?/ "
         self.PASSWORD_START_POSITION: int = abs(start)
@@ -13,5 +13,3 @@ class MainVariables:
                 self.PASSWORD_STOP_POSITION, self.PASSWORD_START_POSITION
 
         self.OUTPUT_FOLDER: str = os.getcwd() if not output or output == "" else os.path.abspath(fr"{output}")
-
-        tests.print_main_variables(self)
