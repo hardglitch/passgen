@@ -8,12 +8,12 @@ from . import global_vars
 
 MOCK_get_console_parameters = True
 MOCK_CLI_PASSWORD_START_POSITION = 1
-MOCK_CLI_PASSWORD_STOP_POSITION = 3
+MOCK_CLI_PASSWORD_STOP_POSITION = 2
 MOCK_CLI_OUTPUT_FOLDER = ""
 
 MOCK_checkup_last_word = True
 
-INFO_print_value = True
+INFO_print_value = True             # enable all INFO_...
 INFO_print_main_variables = True
 INFO_password_generator = True
 
@@ -25,6 +25,11 @@ if MOCK_get_console_parameters:
     MAIN_VARS.PASSWORD_STOP_POSITION = MOCK_CLI_PASSWORD_STOP_POSITION
     if MOCK_CLI_OUTPUT_FOLDER:
         MAIN_VARS.OUTPUT_FOLDER = MOCK_CLI_OUTPUT_FOLDER
+
+
+def print_value(value):
+    if INFO_print_value:
+        print(value)
 
 
 def get_console_parameters(func):
@@ -39,11 +44,12 @@ def get_console_parameters(func):
 
 def print_main_variables():
     if INFO_print_main_variables:
-        print(f"--- Test Mode is Enable. ---\n\n"
-              f"CHARSET = {MAIN_VARS.CHARSET}\n"
-              f"PASSWORD_START_POSITION = {MAIN_VARS.PASSWORD_START_POSITION}\n"
-              f"PASSWORD_STOP_POSITION = {MAIN_VARS.PASSWORD_STOP_POSITION}\n"
-              f"OUTPUT_FOLDER = {MAIN_VARS.OUTPUT_FOLDER if MAIN_VARS.OUTPUT_FOLDER else 'current'}\n")
+        print_value(f"--- Test Mode is Enable. ---\n\n"
+                    f"CHARSET = {MAIN_VARS.CHARSET}\n"
+                    f"CHARSET_SIZE = {MAIN_VARS.CHARSET_SIZE}\n"
+                    f"PASSWORD_START_POSITION = {MAIN_VARS.PASSWORD_START_POSITION}\n"
+                    f"PASSWORD_STOP_POSITION = {MAIN_VARS.PASSWORD_STOP_POSITION}\n"
+                    f"OUTPUT_FOLDER = {MAIN_VARS.OUTPUT_FOLDER if MAIN_VARS.OUTPUT_FOLDER else 'current'}\n")
 
 
 def checkup_last_word(func):
@@ -63,28 +69,68 @@ def checkup_last_word(func):
     return result_as_function  # function
 
 
-def password_generator(func):
+def print_password_generator_info(func, value):
+    if INFO_password_generator:
+        @functools.wraps(func)
+        def wrapper(*args):
+            result = func(*args)
+            print_value(f"{value} = {result}")
+            return result
+        return wrapper
     return func
-
-
-def print_value(value):
-    if INFO_print_value:
-        print(value)
 
 
 def create_embedded_loops(func):
     if INFO_password_generator:
-        result = func()
-        print_value(f"empty_embedded_loops = {result}")
-    return lambda: result
+        @functools.wraps(func)
+        def wrapper(*args):
+            result = func(*args)
+            print_value(f"empty_char_positions = {result}")
+            return result
+        return wrapper
+    return func
 
 
-def encode_word_to_char_positions_in_charset(func):
+def decode_word_to_char_positions_in_charset(func):
     if INFO_password_generator:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            result = func(*args, **kwargs)
-            print_value(f"filled_embedded_loops = {result}")
+        def wrapper(*args):
+            result = func(*args)
+            print_value(f"filled_char_positions = {result}")
+            return result
+        return wrapper
+    return func
+
+
+def get_next_char_position(func):
+    if INFO_password_generator:
+        @functools.wraps(func)
+        def wrapper(*args):
+            result = func(*args)
+            print_value(f"get_next_char_position = {result}")
+            return result
+        return wrapper
+    return func
+
+
+def get_next_char_positions(func):
+    if INFO_password_generator:
+        @functools.wraps(func)
+        def wrapper(*args):
+            result = func(*args)
+            print_value(f"get_next_char_positions = {result}")
+            return result
+        return wrapper
+    return func
+
+
+def encode_char_positions_to_word(func):
+    if INFO_password_generator:
+        @functools.wraps(func)
+        def wrapper(*args):
+            result = func(*args)
+            print_value(f"encode_char_positions_to_word = {result}")
+            return result
         return wrapper
     return func
 
