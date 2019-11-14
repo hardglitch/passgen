@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import os.path
 import sys
 import re
 
@@ -35,47 +36,35 @@ def password_generator():
     # write every string into 'tmp_dict' file
     # return last generated string on error
 
-    @tests.create_embedded_loops
-    def create_embedded_loops() -> dict:
-        # forming embedded loops: word length = 7 -> 7 loops -> dict{'char1':0, 'char2':0 .. 'char7':0}
+    @tests.create_empty_char_positions
+    def create_empty_char_positions() -> dict:
+        # word length = 7 -> dict{'char1':0, 'char2':0 .. 'char7':0}
         # where 0 - char position in CHARSET
         return {f"char{i+1}": 0 for i in range(main_variables.PASSWORD_STOP_POSITION)}
 
-    @tests.decode_word_to_char_positions_in_charset
-    def decode_word_to_char_positions_in_charset(word: str, loops: dict) -> (dict, int):
+    @tests.decode_word_to_char_positions
+    def decode_word_to_char_positions(word: str, char_pos: dict) -> (dict, int):
         # decode 'word' to char positions in CHARSET
         # 'aah8' -> dict{'char1':0, 'char2':0, 'char3':8, 'char4':61}
         i = 0
-        for i, char in enumerate(loops):
-            loops[char] = main_variables.CHARSET.find(word[i])
-        return loops, i+1
-
-    @tests.get_next_char_position
-    def get_next_char_position(char_pos: int) -> (int, bool):
-        # returns next_char_position in CHARSET
-        # and next_row trigger
-        is_next_row = False
-        if char_pos + 1 <= main_variables.CHARSET_SIZE:
-            char_pos += 1
-        else:
-            char_pos = 0
-            is_next_row = True
-        return char_pos, is_next_row
+        for i, char in enumerate(char_pos):
+            char_pos[char] = main_variables.CHARSET.find(word[i])
+        return char_pos, i+1
 
     @tests.get_next_char_positions
     def get_next_char_positions(char_pos: dict, word_size: int) -> dict:
-        # char_pos - dict{'char1':0, 'char2':8, 'char3':50}
-        # next 'char1 pos' = 'char1 pos' + 1
-        # if 'char1 pos' > len'CHARSET' -> 'char1 pos' = 0,  'char2 pos' = 'char2 pos' + 1
-        # ...
-        # return next_char_positions
-        # 'word_size' is necessary to accelerate / don't execute 'len(char_pos)'
-        for pos in range(word_size, 0, -1):
-            char_pos[f"char{pos}"], is_next_row = get_next_char_position(char_pos[f"char{pos}"])
-            if is_next_row:
-                char_pos[f"char{pos-1}"] += 1
-            else:
-                break
+
+        def set_char_pos(w_size: int):
+            char_pos[f"char{w_size}"] = char_pos[f"char{w_size}"] + 1 \
+                if 0 <= char_pos[f"char{w_size}"] < main_variables.CHARSET_SIZE - 1 else 0
+            return char_pos[f"char{w_size}"]  # just feed back
+
+        def recursive_checkup(w_size):
+            if set_char_pos(w_size) == 0 and w_size > 0:
+                w_size -= 1
+                recursive_checkup(w_size)
+
+        recursive_checkup(word_size)
         return char_pos
 
     @tests.encode_char_positions_to_word
@@ -87,21 +76,27 @@ def password_generator():
             word = f"{word}{main_variables.CHARSET[pos]}"
         return word
 
-    with open(main_variables.OUTPUT_FOLDER + r"\tmp_dict", "a") as tmp_dict_file:
+    def is_dict_file_size_normal(path: str) -> bool:
+        return True if os.path.getsize(path) <= main_variables.OUTPUT_FILE_SIZE else False
 
-        embedded_loops = create_embedded_loops()
+    file_full_path: str = main_variables.OUTPUT_FOLDER + r"\tmp_dict"
+    with open(file_full_path, "a") as tmp_dict_file:
+        empty_char_positions = create_empty_char_positions()
         last_word = checkup_last_word()
-        char_positions, char_quantity = decode_word_to_char_positions_in_charset(last_word, embedded_loops)
-        char_positions = get_next_char_positions(char_positions, char_quantity)
-        encode_char_positions_to_word(char_positions)
+        char_positions, char_quantity = decode_word_to_char_positions(last_word, empty_char_positions)
 
-        # while True:
-        #   char_positions[char_quantity], next_char_row = get_next_char_position(char_positions[char_quantity])
-        #     if tmp_dict_file.writable():
-        #         tmp_dict_file.write(fr"{word}")  # for example 'aa' or 'v7-'
-        #         tmp_dict_file.write("\r\n")
-        #     else:
-        #         return fr""
+        while True:
+            if tmp_dict_file.writable() and last_word and is_dict_file_size_normal(file_full_path):
+                tmp_dict_file.write(fr"{last_word}")  # for example 'aa' or 'v7-'
+                tmp_dict_file.write("\r\n")
+
+                try:
+                    char_positions = get_next_char_positions(char_positions, char_quantity)
+                    last_word = encode_char_positions_to_word(char_positions)
+                except KeyError:
+                    break
+            else:
+                return
 
 
 # -----------------------------

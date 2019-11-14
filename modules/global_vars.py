@@ -14,3 +14,4 @@ class MainVariables:
                 self.PASSWORD_STOP_POSITION, self.PASSWORD_START_POSITION
 
         self.OUTPUT_FOLDER: str = os.getcwd() if not output or output == "" else os.path.abspath(fr"{output}")
+        self.OUTPUT_FILE_SIZE: int = 10 * 1024 * 1024 * 1024   # 10 Gb
