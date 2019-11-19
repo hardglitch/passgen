@@ -14,6 +14,7 @@ def get_console_parameters() -> []:  # list
     parser.add_argument("start", type=int, help="Start Position (>=1)")
     parser.add_argument("stop", type=int, help="Stop Position")
     parser.add_argument("-o", "--output", nargs="?", help="Output Directory")
+    parser.add_argument("-r", "--resume", nargs="?", help="To resume Writing of a Dictionary")
     return parser.parse_args(sys.argv[1:])
 
 
@@ -79,10 +80,26 @@ def password_generator():
     def is_dict_file_size_normal(path: str) -> bool:
         return True if os.path.getsize(path) <= main_variables.OUTPUT_FILE_SIZE else False
 
-    file_full_path: str = main_variables.OUTPUT_FOLDER + r"\tmp_dict"
+    def name_filtering(name: str) -> str:
+        for i in main_variables.FORBIDDEN_CHARS:
+            name = name.replace(i, "_")
+        return name
+
+    def rename_tmp_dict_file():
+        # rename 'tmp_dict' file to '<first_string>-<last_string>.txt'
+        old_name = file_full_path
+        new_name: str = f"{main_variables.OUTPUT_FOLDER}\\{first_string}-{last_string}.txt"
+
+        try:
+            os.rename(old_name, new_name)
+        except PermissionError:
+            print(f"Unable create file '{new_name}'")
+
+    file_full_path: str = main_variables.OUTPUT_FOLDER + r"/tmp_dict"
     with open(file_full_path, "a") as tmp_dict_file:
         empty_char_positions = create_empty_char_positions()
         last_word = checkup_last_word()
+        first_string = name_filtering(last_word)
         char_positions, char_quantity = decode_word_to_char_positions(last_word, empty_char_positions)
 
         while True:
@@ -94,10 +111,12 @@ def password_generator():
                     char_positions = get_next_char_positions(char_positions, char_quantity)
                     last_word = encode_char_positions_to_word(char_positions)
                 except KeyError:
+                    last_string = name_filtering(last_word)
                     break
             else:
-                return
+                break
 
+    rename_tmp_dict_file()
 
 # -----------------------------
 

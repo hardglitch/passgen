@@ -10,6 +10,7 @@ MOCK_get_console_parameters = True
 MOCK_CLI_PASSWORD_START_POSITION = 1
 MOCK_CLI_PASSWORD_STOP_POSITION = 2
 MOCK_CLI_OUTPUT_FOLDER = ""
+MOCK_CLI_RESUME = False
 TEST_OUTPUT_FILE_SIZE = 10 * 1024 * 1024  # 10 Mb
 
 MOCK_checkup_last_word = True
@@ -27,6 +28,8 @@ if MOCK_get_console_parameters:
     MAIN_VARS.OUTPUT_FILE_SIZE = TEST_OUTPUT_FILE_SIZE
     if MOCK_CLI_OUTPUT_FOLDER:
         MAIN_VARS.OUTPUT_FOLDER = MOCK_CLI_OUTPUT_FOLDER
+    if MOCK_CLI_RESUME:
+        MAIN_VARS.RESUME = True
 
 
 def print_value(value):
