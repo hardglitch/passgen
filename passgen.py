@@ -13,6 +13,7 @@ def get_console_parameters() -> []:  # list
     parser = ArgumentParser()
     parser.add_argument("start", type=int, help="Start Position (>=1)")
     parser.add_argument("stop", type=int, help="Stop Position")
+    parser.add_argument("-s", "--size", type=int, help="Output File Size")
     parser.add_argument("-o", "--output", nargs="?", help="Output Directory")
     parser.add_argument("-r", "--resume", nargs="?", help="To resume Writing of a Dictionary")
     return parser.parse_args(sys.argv[1:])
@@ -55,13 +56,13 @@ def password_generator():
     @tests.get_next_char_positions
     def get_next_char_positions(char_pos: dict, word_size: int) -> dict:
 
-        def set_char_pos(w_size: int):
+        def set_char_pos(w_size: int) -> int:
             char_pos[f"char{w_size}"] = char_pos[f"char{w_size}"] + 1 \
                 if 0 <= char_pos[f"char{w_size}"] < main_variables.CHARSET_SIZE - 1 else 0
-            return char_pos[f"char{w_size}"]  # just feed back
+            return char_pos[f"char{w_size}"]  # just feedback
 
         def recursive_checkup(w_size):
-            if set_char_pos(w_size) == 0 and w_size > 0:
+            if set_char_pos(w_size) == 0 and w_size > 1:
                 w_size -= 1
                 recursive_checkup(w_size)
 
@@ -89,34 +90,30 @@ def password_generator():
         # rename 'tmp_dict' file to '<first_string>-<last_string>.txt'
         old_name = file_full_path
         new_name: str = f"{main_variables.OUTPUT_FOLDER}\\{first_string}-{last_string}.txt"
-
         try:
             os.rename(old_name, new_name)
         except PermissionError:
             print(f"Unable create file '{new_name}'")
 
     file_full_path: str = main_variables.OUTPUT_FOLDER + r"/tmp_dict"
-    with open(file_full_path, "a") as tmp_dict_file:
-        empty_char_positions = create_empty_char_positions()
-        last_word = checkup_last_word()
+    empty_char_positions: dict = create_empty_char_positions()
+    last_word: str = checkup_last_word()
+    char_positions, char_quantity = decode_word_to_char_positions(last_word, empty_char_positions)
+
+    while last_word != main_variables.LATEST_WORD:
         first_string = name_filtering(last_word)
-        char_positions, char_quantity = decode_word_to_char_positions(last_word, empty_char_positions)
 
-        while True:
-            if tmp_dict_file.writable() and last_word and is_dict_file_size_normal(file_full_path):
-                tmp_dict_file.write(fr"{last_word}")  # for example 'aa' or 'v7-'
-                tmp_dict_file.write("\r\n")
-
-                try:
-                    char_positions = get_next_char_positions(char_positions, char_quantity)
-                    last_word = encode_char_positions_to_word(char_positions)
-                except KeyError:
-                    last_string = name_filtering(last_word)
+        with open(file_full_path, "a") as tmp_dict_file:
+            while is_dict_file_size_normal(file_full_path) and tmp_dict_file.writable():
+                tmp_dict_file.write(f"{last_word}\r\n")  # for example 'aa' or 'v7-'
+                if last_word == main_variables.LATEST_WORD:
                     break
-            else:
-                break
+                char_positions = get_next_char_positions(char_positions, char_quantity)
+                last_word = encode_char_positions_to_word(char_positions)
 
-    rename_tmp_dict_file()
+        last_string = name_filtering(last_word)
+        tmp_dict_file.close()
+        rename_tmp_dict_file()
 
 # -----------------------------
 
@@ -124,6 +121,7 @@ def password_generator():
 if __name__ == "__main__":
 
     cli_args = get_console_parameters()
-    main_variables = global_vars.MainVariables(cli_args.start, cli_args.stop, cli_args.output)
+    main_variables = global_vars.MainVariables(cli_args.start, cli_args.stop, cli_args.output,
+                                               cli_args.size, cli_args.resume)
 
     password_generator()
